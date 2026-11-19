@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using RoomHub.Api.Common;
+using RoomHub.Api.Domain.Rooms;
 using RoomHub.Api.Infrastructure;
 
 namespace RoomHub.Api.Features.Rooms.GetRoomById;
@@ -16,12 +18,7 @@ public static class GetRoomByIdEndpoint
     {
         var room = store.Find(id);
         if (room is null)
-        {
-            return TypedResults.Problem(
-                title: "RoomNotFound",
-                detail: "The room does not exist.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
+            return RoomErrors.NotFound.ToProblem();
 
         return TypedResults.Ok(new Response(room.Id, room.Name, room.Capacity));
     }

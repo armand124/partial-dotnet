@@ -1,14 +1,13 @@
 using System.Collections.Concurrent;
+using RoomHub.Api.Domain.Rooms;
 
 namespace RoomHub.Api.Infrastructure;
 
-public sealed record RoomRecord(Guid Id, string Name, int Capacity);
-
 public sealed class InMemoryRoomStore
 {
-    private readonly ConcurrentDictionary<Guid, RoomRecord> _rooms = new();
+    private readonly ConcurrentDictionary<Guid, Room> _rooms = new();
 
-    public void Add(RoomRecord record) => _rooms[record.Id] = record;
+    public void Add(Room room) => _rooms[room.Id] = room;
 
-    public RoomRecord? Find(Guid id) => _rooms.GetValueOrDefault(id);
+    public Room? Find(Guid id) => _rooms.GetValueOrDefault(id);
 }

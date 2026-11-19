@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using RoomHub.Api.Common;
+using RoomHub.Api.Domain.Bookings;
 using RoomHub.Api.Infrastructure;
 
 namespace RoomHub.Api.Features.Bookings.GetBookingById;
@@ -23,19 +25,14 @@ public static class GetBookingByIdEndpoint
     {
         var booking = store.Find(id);
         if (booking is null)
-        {
-            return TypedResults.Problem(
-                title: "BookingNotFound",
-                detail: "The booking does not exist.",
-                statusCode: StatusCodes.Status404NotFound);
-        }
+            return BookingErrors.NotFound.ToProblem();
 
         return TypedResults.Ok(new Response(
             booking.Id,
             booking.RoomId,
             booking.BookedBy,
-            booking.StartUtc,
-            booking.EndUtc,
+            booking.Range.StartUtc,
+            booking.Range.EndUtc,
             booking.Attendees,
             booking.Status));
     }
