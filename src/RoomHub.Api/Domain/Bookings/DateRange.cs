@@ -25,7 +25,7 @@ public sealed record DateRange
     public bool Overlaps(DateRange other) =>
         StartUtc < other.EndUtc && other.StartUtc < EndUtc;
 
-    private static DateTime ToUtc(DateTime value) => value.Kind switch
+    internal static DateTime ToUtc(DateTime value) => value.Kind switch
     {
         DateTimeKind.Utc => value,
         DateTimeKind.Local => value.ToUniversalTime(),

@@ -7,6 +7,10 @@ public sealed class Room
 {
     public const int MaxNameLength = 100;
 
+    public const int LargeRoomCapacityThreshold = 10;
+
+    public static readonly TimeSpan LargeRoomMaxDuration = TimeSpan.FromHours(2);
+
     private Room() { }
 
     public Guid Id { get; private set; }
@@ -35,6 +39,7 @@ public sealed class Room
         DateTime end,
         int attendees,
         IReadOnlyCollection<Booking> existingBookings,
+        IReadOnlyCollection<Booking> sameDayBookingsOfBooker,
         DateTime nowUtc)
     {
         var bookingResult = Booking.Create(Id, bookedBy, start, end, attendees, nowUtc);
@@ -46,12 +51,22 @@ public sealed class Room
         if (booking.Attendees > Capacity)
             return BookingErrors.AttendeesExceedCapacity;
 
+        if (Capacity > LargeRoomCapacityThreshold && booking.Range.Duration > LargeRoomMaxDuration)
+            return BookingErrors.TooLongForLargeRoom;
+
         var occupied = existingBookings.Any(existing =>
             existing.RoomId == Id
             && existing.Status == BookingStatus.Active
             && existing.Range.Overlaps(booking.Range));
         if (occupied)
             return BookingErrors.RoomOccupied;
+
+        var activeThatDay = sameDayBookingsOfBooker.Count(existing =>
+            existing.Status == BookingStatus.Active
+            && string.Equals(existing.BookedBy, booking.BookedBy, StringComparison.Ordinal)
+            && existing.Range.StartUtc.Date == booking.Range.StartUtc.Date);
+        if (activeThatDay >= Booking.MaxActiveBookingsPerDay)
+            return BookingErrors.DailyLimitExceeded;
 
         return booking;
     }

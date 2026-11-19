@@ -6,7 +6,11 @@ public sealed class Booking
 {
     public const int MaxBookedByLength = 100;
 
+    public const int MaxActiveBookingsPerDay = 2;
+
     public static readonly TimeSpan MaxDuration = TimeSpan.FromHours(4);
+
+    public static readonly TimeSpan MinCancellationNotice = TimeSpan.FromMinutes(60);
 
     private Booking() { }
 
@@ -54,10 +58,15 @@ public sealed class Booking
         };
     }
 
-    public Result<Unit> Cancel()
+    public static DateTime UtcDayOf(DateTime start) => DateRange.ToUtc(start).Date;
+
+    public Result<Unit> Cancel(DateTime nowUtc)
     {
         if (Status == BookingStatus.Cancelled)
             return BookingErrors.AlreadyCancelled;
+
+        if (Range.StartUtc - nowUtc < MinCancellationNotice)
+            return BookingErrors.CancellationTooLate;
 
         Status = BookingStatus.Cancelled;
         return Unit.Value;

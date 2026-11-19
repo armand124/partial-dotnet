@@ -30,12 +30,18 @@ public sealed class CreateBookingHandler(
 
         var existing = await bookings.ListActiveByRoomAsync(room.Id, cancellationToken);
 
+        var day = Booking.UtcDayOf(command.StartUtc);
+        IReadOnlyList<Booking> sameDay = string.IsNullOrWhiteSpace(command.BookedBy)
+            ? []
+            : await bookings.ListActiveByBookedByOnDayAsync(command.BookedBy.Trim(), day, cancellationToken);
+
         var bookingResult = room.Book(
             command.BookedBy,
             command.StartUtc,
             command.EndUtc,
             command.Attendees,
             existing,
+            sameDay,
             time.GetUtcNow().UtcDateTime);
         if (bookingResult.IsFailure)
             return bookingResult.Error;
