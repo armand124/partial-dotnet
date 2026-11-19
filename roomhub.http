@@ -1,0 +1,184 @@
+### Variables
+@baseUrl = http://localhost:5090
+
+### 1. Create room
+# @name createRoom
+POST {{baseUrl}}/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Study room 1",
+  "capacity": 10
+}
+
+###
+@roomId = {{createRoom.response.body.$.id}}
+
+### 2. Get room
+GET {{baseUrl}}/api/rooms/{{roomId}}
+
+### 3. Get a missing room (expected: 404)
+GET {{baseUrl}}/api/rooms/00000000-0000-0000-0000-000000000001
+
+### 4. Create booking (change the dates to the future!)
+# @name createBooking
+POST {{baseUrl}}/api/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "ana",
+  "startUtc": "2030-01-10T10:00:00Z",
+  "endUtc": "2030-01-10T12:00:00Z",
+  "attendees": 4
+}
+
+###
+@bookingId = {{createBooking.response.body.$.id}}
+
+### 5. Get booking
+GET {{baseUrl}}/api/bookings/{{bookingId}}
+
+### 6. Overlapping booking (expected: 409)
+POST {{baseUrl}}/api/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "bogdan",
+  "startUtc": "2030-01-10T11:00:00Z",
+  "endUtc": "2030-01-10T13:00:00Z",
+  "attendees": 4
+}
+
+### 7. Cancel booking
+POST {{baseUrl}}/api/bookings/{{bookingId}}/cancel
+
+### 8. Add your own requests here for the rules in ASSIGNMENT.md
+
+###
+@r8Room = {{r8CreateRoom.response.body.$.id}}
+
+### 8.0 Create room for rule checks
+# @name r8CreateRoom
+POST {{baseUrl}}/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Rules room",
+  "capacity": 10
+}
+
+### R1 empty name (expected: 400 InvalidName)
+POST {{baseUrl}}/api/rooms
+Content-Type: application/json
+
+{
+  "name": "   ",
+  "capacity": 10
+}
+
+### R1 capacity 0 (expected: 400 InvalidCapacity)
+POST {{baseUrl}}/api/rooms
+Content-Type: application/json
+
+{
+  "name": "Study room",
+  "capacity": 0
+}
+
+### R2 empty bookedBy (expected: 400 InvalidBookedBy)
+POST {{baseUrl}}/api/rooms/{{r8Room}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "",
+  "startUtc": "2030-02-10T10:00:00Z",
+  "endUtc": "2030-02-10T12:00:00Z",
+  "attendees": 4
+}
+
+### R3 end equal to start (expected: 400 InvalidRange)
+POST {{baseUrl}}/api/rooms/{{r8Room}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "ana",
+  "startUtc": "2030-02-10T10:00:00Z",
+  "endUtc": "2030-02-10T10:00:00Z",
+  "attendees": 4
+}
+
+### R4 attendees 0 (expected: 400 InvalidAttendees)
+POST {{baseUrl}}/api/rooms/{{r8Room}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "ana",
+  "startUtc": "2030-02-10T10:00:00Z",
+  "endUtc": "2030-02-10T12:00:00Z",
+  "attendees": 0
+}
+
+### R4 attendees above capacity (expected: 400 AttendeesExceedCapacity)
+POST {{baseUrl}}/api/rooms/{{r8Room}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "ana",
+  "startUtc": "2030-02-10T10:00:00Z",
+  "endUtc": "2030-02-10T12:00:00Z",
+  "attendees": 11
+}
+
+### Booking on a missing room (expected: 404 RoomNotFound)
+POST {{baseUrl}}/api/rooms/00000000-0000-0000-0000-000000000001/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "ana",
+  "startUtc": "2030-02-10T10:00:00Z",
+  "endUtc": "2030-02-10T12:00:00Z",
+  "attendees": 4
+}
+
+### R7 first booking 10-12 (expected: 201)
+# @name r7First
+POST {{baseUrl}}/api/rooms/{{r8Room}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "ana",
+  "startUtc": "2030-02-10T10:00:00Z",
+  "endUtc": "2030-02-10T12:00:00Z",
+  "attendees": 4
+}
+
+###
+@r7FirstId = {{r7First.response.body.$.id}}
+
+### R7 touching booking 12-14 (expected: 201)
+POST {{baseUrl}}/api/rooms/{{r8Room}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "bogdan",
+  "startUtc": "2030-02-10T12:00:00Z",
+  "endUtc": "2030-02-10T14:00:00Z",
+  "attendees": 4
+}
+
+### R8 cancel (expected: 204)
+POST {{baseUrl}}/api/bookings/{{r7FirstId}}/cancel
+
+### R8 cancel again (expected: 409 BookingAlreadyCancelled)
+POST {{baseUrl}}/api/bookings/{{r7FirstId}}/cancel
+
+### R8 rebook the freed interval (expected: 201)
+POST {{baseUrl}}/api/rooms/{{r8Room}}/bookings
+Content-Type: application/json
+
+{
+  "bookedBy": "carla",
+  "startUtc": "2030-02-10T10:00:00Z",
+  "endUtc": "2030-02-10T12:00:00Z",
+  "attendees": 4
+}
