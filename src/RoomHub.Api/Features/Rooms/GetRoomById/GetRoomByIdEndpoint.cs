@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using RoomHub.Api.Common;
 using RoomHub.Api.Domain.Rooms;
-using RoomHub.Api.Infrastructure;
+using RoomHub.Api.Infrastructure.Persistence;
 
 namespace RoomHub.Api.Features.Rooms.GetRoomById;
 
@@ -12,11 +13,14 @@ public static class GetRoomByIdEndpoint
     public static void Map(RouteGroupBuilder group) =>
         group.MapGet("/{id:guid}", Handle).WithName("GetRoomById");
 
-    private static Results<Ok<Response>, ProblemHttpResult> Handle(
+    private static async Task<Results<Ok<Response>, ProblemHttpResult>> Handle(
         Guid id,
-        InMemoryRoomStore store)
+        RoomHubDbContext db,
+        CancellationToken cancellationToken)
     {
-        var room = store.Find(id);
+        var room = await db.Rooms
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
         if (room is null)
             return RoomErrors.NotFound.ToProblem();
 

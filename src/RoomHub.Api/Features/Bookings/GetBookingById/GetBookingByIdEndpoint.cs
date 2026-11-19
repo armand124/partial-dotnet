@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using RoomHub.Api.Common;
 using RoomHub.Api.Domain.Bookings;
-using RoomHub.Api.Infrastructure;
+using RoomHub.Api.Infrastructure.Persistence;
 
 namespace RoomHub.Api.Features.Bookings.GetBookingById;
 
@@ -19,11 +20,14 @@ public static class GetBookingByIdEndpoint
     public static void Map(RouteGroupBuilder group) =>
         group.MapGet("/{id:guid}", Handle).WithName("GetBookingById");
 
-    private static Results<Ok<Response>, ProblemHttpResult> Handle(
+    private static async Task<Results<Ok<Response>, ProblemHttpResult>> Handle(
         Guid id,
-        InMemoryBookingStore store)
+        RoomHubDbContext db,
+        CancellationToken cancellationToken)
     {
-        var booking = store.Find(id);
+        var booking = await db.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
         if (booking is null)
             return BookingErrors.NotFound.ToProblem();
 

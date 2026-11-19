@@ -5,6 +5,8 @@ namespace RoomHub.Api.Domain.Rooms;
 
 public sealed class Room
 {
+    public const int MaxNameLength = 100;
+
     private Room() { }
 
     public Guid Id { get; private set; }

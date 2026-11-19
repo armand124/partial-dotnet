@@ -4,6 +4,8 @@ namespace RoomHub.Api.Domain.Bookings;
 
 public sealed class Booking
 {
+    public const int MaxBookedByLength = 100;
+
     public static readonly TimeSpan MaxDuration = TimeSpan.FromHours(4);
 
     private Booking() { }
